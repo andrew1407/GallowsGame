@@ -6,6 +6,8 @@
         "UnityEditor.TestRunner",
         "Zenject",
         "Zenject-TestFramework",
+        "Unity.TextMeshPro.Editor",
+        "Unity.TextMeshPro",
         "Core"
     ],
     "includePlatforms": [],
