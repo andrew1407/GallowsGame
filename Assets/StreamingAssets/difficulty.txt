@@ -1,4 +1,4 @@
-Difficulty:
+Difficulty (add '++' to turn on 'guess one letter only' mode):
 
 1) я у мамы телепат (DIFFICULT try);
 

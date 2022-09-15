@@ -15,7 +15,8 @@ public class HttpClientStrategy : IGameplayStrategy, IDisposable
     {
         _client = client;
         string uri = address.AbsoluteUri;
-        uri += uri.EndsWith('/') ? "nextStage" : "/nextStage";
+        if (!uri.EndsWith('/')) uri += '/';
+        uri += RequestPayload.EVENT_NAME;
         _address = uri;
     }
 

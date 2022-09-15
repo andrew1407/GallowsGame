@@ -10,10 +10,7 @@ public class StageActivity : IResetable
 
     private TaskCompletionSource<bool> _coroutineFinished;
 
-    public StageActivity(MonoBehaviour monoBehaviour)
-    {
-        _monoBehaviour = monoBehaviour;
-    }
+    public StageActivity(MonoBehaviour monoBehaviour) => _monoBehaviour = monoBehaviour;
 
     public async Task<bool> AwaitActionFinish(IEnumerator action)
     {

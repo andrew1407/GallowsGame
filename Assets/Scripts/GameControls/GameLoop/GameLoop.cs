@@ -71,22 +71,23 @@ public class GameLoop : IResetable, IDisposable
     {
         if (_state.Playing) return;
         _state.Playing = true;
-        GameProgress gameProgress;
         bool stageInterractive;
-        do
-        {
-            gameProgress = await _gameplayStrategy.StageAction(input);
-            string stage = gameProgress.Stage;
-            _state.FormatInput = stage != GameStageLabels.Difficulty;
-            _inputField.text = string.Empty;
-            _inputField.ActivateInputField();
-            if (string.IsNullOrEmpty(stage)) break;
-            IViewController view = _viewsContainer[stage];
-            bool success = await _stageActivity.AwaitActionFinish(view.PlayActions(gameProgress));
-            if (!success) break;
-            stageInterractive = GameStageLabels.IsInterractive(stage);
-        }
+        do stageInterractive = await runStage(input);
         while(!stageInterractive);
         _state.Playing = false;
+    }
+
+    private async Task<bool> runStage(string input)
+    {
+        var gameProgress = await _gameplayStrategy.StageAction(input);
+        string stage = gameProgress.Stage;
+        _state.FormatInput = stage != GameStageLabels.Difficulty;
+        _inputField.text = string.Empty;
+        _inputField.ActivateInputField();
+        if (string.IsNullOrEmpty(stage)) return true;
+        IViewController view = _viewsContainer[stage];
+        bool success = await _stageActivity.AwaitActionFinish(view.PlayActions(gameProgress));
+        if (!success) return true;
+        return GameStageLabels.IsInterractive(stage);
     }
 }

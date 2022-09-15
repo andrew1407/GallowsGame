@@ -5,8 +5,6 @@ using WebSocketSharp;
 
 public class WebSocketClientStrategy : IGameplayStrategy, IDisposable
 {
-    private const string _eventName = "nextStage";
-
     private readonly string _address;
 
     private WebSocket _socket;
@@ -27,7 +25,7 @@ public class WebSocketClientStrategy : IGameplayStrategy, IDisposable
         _socket.OnMessage += parseMessage;
         _socket.OnClose += clearMessageData;
         _messageData = new();
-        _socket.Connect();
+        _socket.ConnectAsync();
         await connection.Task;
         _socket.OnOpen -= onOpen;
     }
@@ -40,8 +38,8 @@ public class WebSocketClientStrategy : IGameplayStrategy, IDisposable
         _messageData = null;
         if (!response.HasValue) return default;
         var entries = response.Value;
-        if (!entries.Data.HasValue || entries.End == true || entries.Event != _eventName) return default;
-        return entries.Data.Value;
+        bool invalid = !entries.Data.HasValue || entries.End == true || entries.Event != RequestPayload.EVENT_NAME;
+        return invalid ? default : entries.Data.Value;
     }
 
     public void Dispose()
@@ -62,7 +60,7 @@ public class WebSocketClientStrategy : IGameplayStrategy, IDisposable
     private void sendInput(string input)
     {
         var requestPayload = new RequestPayload() {
-            Event = _eventName,
+            Event = RequestPayload.EVENT_NAME,
             Data = new DataContainer() { Input = input },
         };
         _messageData = new();

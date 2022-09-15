@@ -6,8 +6,6 @@ using Newtonsoft.Json;
 
 public class UdpClientStrategy : IGameplayStrategy, IDisposable
 {
-    private const string _eventName = "nextStage";
-    
     private readonly string _host;
 
     private readonly int _port;
@@ -59,7 +57,7 @@ public class UdpClientStrategy : IGameplayStrategy, IDisposable
     {
         var requestPayload = new RequestPayload() {
             Id = _id,
-            Event = _eventName,
+            Event = RequestPayload.EVENT_NAME,
             Data = new DataContainer() {
                 Input = input,
                 Initial = initial
@@ -75,7 +73,7 @@ public class UdpClientStrategy : IGameplayStrategy, IDisposable
         UdpReceiveResult received = await _client.ReceiveAsync();
         string receivedString = Encoding.UTF8.GetString(received.Buffer);
         var response = JsonConvert.DeserializeObject<ResponsePayload>(receivedString);
-        if (response.End == true || response.Data == null || response.Event != _eventName) return default;
-        return response.Data.Value;
+        bool invalid = response.End == true || response.Data == null || response.Event != RequestPayload.EVENT_NAME;
+        return invalid ? default : response.Data.Value;
     }
 }
