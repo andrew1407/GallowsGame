@@ -15,6 +15,7 @@ public class GameLoopInstaller : MonoInstaller
         Container.BindInstance(_startOptionsContainer);
 
         Container.Bind<GameModeSelector>().AsSingle();
+        Container.Bind<GameplayStrategyFactory>().WhenInjectedInto<GameModeSelector>();
 
         Container.Bind<GameLoop>()
             .FromSubContainerResolve()

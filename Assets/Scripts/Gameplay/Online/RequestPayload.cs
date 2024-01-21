@@ -13,7 +13,7 @@ public struct RequestPayload
 {
     [JsonIgnore]
     public const string EVENT_NAME = "nextStage";
-    
+
     [JsonProperty(PropertyName="id", NullValueHandling=NullValueHandling.Ignore)]
     public string Id;
 

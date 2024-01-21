@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Net.Http;
 using Zenject;
 using TMPro;
 
@@ -10,6 +8,8 @@ public class GameModeSelector
     [Inject] private readonly StartOptionsContainer _options;
 
     [Inject] private readonly GameLoop _gameLoop;
+
+    [Inject] private readonly GameplayStrategyFactory _gameplayStrategyFactory;
 
     private TMP_InputField _addressInput;
 
@@ -54,20 +54,13 @@ public class GameModeSelector
         var resourceLoader = new ResourceLoader();
         string[] words = await resourceLoader.LoadWords();
         var gameRules = new GameRules(words);
-        return new(gameRules);
+        return _gameplayStrategyFactory.MakeOfflineStrategy(gameRules);
     }
 
     private IGameplayStrategy loadOnlineMode()
     {
         var uri = new Uri(_addressInput.text);
-        Dictionary<string, Func<IGameplayStrategy>> strategies = new() {
-            {"http", () => new HttpClientStrategy(new HttpClient(), uri)},
-            {"ws", () => new WebSocketClientStrategy(uri)},
-            {"udp", () => UdpClientStrategy.Of(uri)},
-        };
-        string scheme = uri.Scheme;
-        if (strategies.ContainsKey(scheme)) return strategies[scheme]();
-        throw new UriFormatException();
+        return _gameplayStrategyFactory.MakeOnlineStrategyByUri(uri);
     }
 
     private void deactivateStateParams()
