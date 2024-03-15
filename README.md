@@ -1,5 +1,7 @@
 # GallowsGame
 
+![main workflow badge](https://github.com/andrew1407/GallowsGame/actions/workflows/main.yml/badge.svg)
+
 **GallowsGame (Hangman)** is a 2D sprite game with:
 
 + 4 difficulty levels;
