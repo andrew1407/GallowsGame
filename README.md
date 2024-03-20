@@ -1,6 +1,6 @@
 # GallowsGame
 
-![main workflow badge](https://github.com/andrew1407/GallowsGame/actions/workflows/main.yml/badge.svg)
+[![main workflow badge](https://github.com/andrew1407/GallowsGame/actions/workflows/main.yml/badge.svg)](https://github.com/andrew1407/GallowsGame/actions)
 
 **GallowsGame (Hangman)** is a 2D sprite game with:
 
