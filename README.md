@@ -10,11 +10,11 @@
 
 + 4 difficulty levels;
 + [offline](./Assets/Scripts/Gameplay/Offline/OfflineStrategy.cs) mode;
-+ online mode, clients:
-    1. [HTTP](./Assets/Scripts/Gameplay/Online/HttpClientStrategy.cs);
-    2. [WebSocket](./Assets/Scripts/Gameplay/Online/WebSocketClientStrategy.cs);
-    3. [UDP](./Assets/Scripts/Gameplay/Online/UdpClientStrategy.cs);
-    4. [TCP](./Assets/Scripts/Gameplay/Online/TcpClientStrategy.cs);
++ online mode, 4 clients (using **[gallows-remastered API](https://github.com/Andrew1407/gallows-remastered)**):
+  + [HTTP](./Assets/Scripts/Gameplay/Online/HttpClientStrategy.cs).
+  + [WebSocket](./Assets/Scripts/Gameplay/Online/WebSocketClientStrategy.cs).
+  + [UDP](./Assets/Scripts/Gameplay/Online/UdpClientStrategy.cs).
+  + [TCP](./Assets/Scripts/Gameplay/Online/TcpClientStrategy.cs).
 
 ## Gameplay
 
