@@ -3,7 +3,9 @@
 [![main workflow badge](https://github.com/andrew1407/GallowsGame/actions/workflows/main.yml/badge.svg)](https://github.com/andrew1407/GallowsGame/actions)
 
 <p align="center">
-  <a target="blank"><img src="./Assets/Art/icon.png" width="140" alt="DichBox Logo" /></a>
+  <a href="https://github.com/andrew1407/GallowsGame/releases">
+    <img src="./Assets/Art/icon.png" width="140" alt="DichBox Logo" />
+  </a>
 </p>
 
 **GallowsGame (Hangman)** is a 2D sprite game with:
