@@ -2318,6 +2318,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _urlAddress: https://github.com/Andrew1407/GallowsGame?tab=readme-ov-file#gallowsgame
+  _actionButton: {fileID: 1241363926}
 --- !u!1 &1269550057
 GameObject:
   m_ObjectHideFlags: 0
