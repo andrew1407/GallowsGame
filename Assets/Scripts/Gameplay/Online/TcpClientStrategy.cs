@@ -30,14 +30,12 @@ public class TcpClientStrategy : IGameplayStrategy, IDisposable
 
     public async Task Setup()
     {
+        // A closed connection can't be reused, so every game (a restart included) starts a new session
         Dispose();
         _client = new();
-        if (string.IsNullOrEmpty(_id))
-        {
-            await _client.ConnectAsync(_host, _port);
-            await acceptProgress();
-        }
         _id = null;
+        await _client.ConnectAsync(_host, _port);
+        await acceptProgress();
     }
 
     public async Task<GameProgress> StageAction(string input)
