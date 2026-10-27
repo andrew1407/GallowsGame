@@ -141,7 +141,7 @@ public class OfflineStrategyTests
         string[] words = string.IsNullOrEmpty(word) ? Array.Empty<string>() : new[] { word };
         var gameRules = new GameRules(words);
         var offlineMode = new OfflineStrategy(gameRules);
-        Task.Run(offlineMode.Setup);
+        Sync.Run(offlineMode.Setup);
         return offlineMode;
     }
 }
