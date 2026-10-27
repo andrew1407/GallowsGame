@@ -1,37 +1,32 @@
 name: Build & test project
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+    tags: ['v*']        # a version tag also publishes the builds as a GitHub release
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write   # unity-test-runner publishes its results as a check run
+
+# A newer push to the same ref supersedes an in-flight run
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # Personal licenses activate with the account itself (manual .alf activation is gone):
+  # UNITY_LICENSE is the contents of the .ulf from a local activation
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
 
 jobs:
-  buildForAllSupportedPlatforms:
-    name: Build for ${{ matrix.targetPlatform }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        targetPlatform:
-          - StandaloneWindows64
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          lfs: true
-      - uses: actions/cache@v2
-        with:
-          path: Library
-          key: Library-${{ matrix.targetPlatform }}
-          restore-keys: Library-
-      - uses: game-ci/unity-builder@v2
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        with:
-          targetPlatform: ${{ matrix.targetPlatform }}
-      - uses: actions/upload-artifact@v2
-        with:
-          name: Build-${{ matrix.targetPlatform }}
-          path: build/${{ matrix.targetPlatform }}
-
-  testAllModes:
+  test:
     name: Test in ${{ matrix.testMode }}
     runs-on: ubuntu-latest
     strategy:
@@ -41,27 +36,109 @@ jobs:
           - playmode
           - editmode
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
         with:
           lfs: true
-      - uses: actions/cache@v2
+      - uses: actions/cache@v5
         with:
-          path: ${{ matrix.projectPath }}/Library
-          key: Library-${{ matrix.projectPath }}
+          path: Library
+          key: Library-test-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
           restore-keys: |
+            Library-test-
             Library-
-      - uses: game-ci/unity-test-runner@v2
+      - uses: game-ci/unity-test-runner@v4
         id: tests
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
-          projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
           artifactsPath: ${{ matrix.testMode }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.testMode }} Test Results
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: Test results for ${{ matrix.testMode }}
           path: ${{ steps.tests.outputs.artifactsPath }}
+
+  build:
+    name: Build for ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Desktop and web targets the Linux editor images can produce
+        # (all use the Mono backend, so no platform-native IL2CPP toolchain is needed)
+        include:
+          - targetPlatform: StandaloneWindows64
+            platform: Windows
+            archive: zip
+          - targetPlatform: StandaloneLinux64
+            platform: Linux
+            archive: tar.gz   # keeps the executable bit
+          - targetPlatform: StandaloneOSX
+            platform: macOS
+            archive: zip
+          - targetPlatform: WebGL
+            platform: WebGL
+            archive: zip
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          lfs: true
+      - uses: actions/cache@v5
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-${{ matrix.targetPlatform }}-
+            Library-
+      - uses: game-ci/unity-builder@v4
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: GallowsGame
+
+      - name: Package
+        env:
+          ARCHIVE: GallowsGame-${{ matrix.platform }}.${{ matrix.archive }}
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" build
+          cd build/${{ matrix.targetPlatform }}
+          # Debugging leftovers Unity marks as not for shipping
+          rm -rf -- *DoNotShip *DontShipItWithYourGame
+          # WebGL is built into its own folder; ship its contents so index.html sits at the archive root
+          if [ "${{ matrix.platform }}" = "WebGL" ]; then cd GallowsGame; fi
+          if [ "${{ matrix.archive }}" = "tar.gz" ]; then
+            tar -czf "$GITHUB_WORKSPACE/$ARCHIVE" .
+          else
+            zip -qry "$GITHUB_WORKSPACE/$ARCHIVE" .
+          fi
+          ls -lh "$GITHUB_WORKSPACE/$ARCHIVE"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: GallowsGame-${{ matrix.platform }}
+          path: GallowsGame-${{ matrix.platform }}.${{ matrix.archive }}
+          compression-level: 0   # already compressed
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          pattern: GallowsGame-*
+          path: dist
+          merge-multiple: true
+      - name: Attach builds to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -lh dist
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag
+          gh release upload "$TAG" dist/* --clobber

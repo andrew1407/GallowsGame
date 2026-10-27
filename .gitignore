@@ -76,3 +76,6 @@ crashlytics-build.properties
 
 # VS Code
 .vscode/
+
+# Burst output the WebGL player build leaves at the project root
+/[Dd]ata/

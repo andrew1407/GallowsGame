@@ -1,0 +1,86 @@
+# Builds the game for WebGL and publishes it to GitHub Pages, so it can be played in the browser.
+#
+# NOTE: Pages must be served from GitHub Actions —
+# Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# (configure-pages below tries to switch it on if Pages was never enabled).
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    # Only what can change the build: docs and CI for other targets ship nothing
+    paths:
+      - 'Assets/**'
+      - 'Packages/**'
+      - 'ProjectSettings/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:   # deploy on demand (use this for the first run, or to force one)
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push supersedes an in-flight one
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    name: Build for WebGL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          lfs: true
+      - uses: actions/cache@v5
+        with:
+          path: Library
+          key: Library-WebGL-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-WebGL-
+            Library-
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: WebGL
+          buildName: GallowsGame
+
+      # Pages cannot set Content-Encoding, so the build relies on the player's decompression
+      # fallback (PlayerSettings → WebGL → Publishing → Decompression Fallback) to load
+      - name: Assemble _site
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" build
+          cp -r build/WebGL/GallowsGame _site
+          # Serve Unity's files as they are, without Jekyll processing
+          touch _site/.nojekyll
+          du -sh _site && ls _site
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
