@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using UnityEngine;
 using Zenject;
 
@@ -41,7 +40,7 @@ public class ViewControllersInstaller : MonoInstaller
 
     private void difficultyInstaller(DiContainer container)
     {
-        string difficlutiesDescription = Task.Run(_resourceLoader.LoadDifficlutiesDescription).GetAwaiter().GetResult();
+        string difficlutiesDescription = _resourceLoader.LoadDifficlutiesDescription();
         container.BindInstance(difficlutiesDescription);
         container.Bind<DifficultyViewController>().AsSingle();
     }
@@ -49,7 +48,7 @@ public class ViewControllersInstaller : MonoInstaller
     private void lossInstaller(DiContainer container)
     {
         container.Bind<LossViewController>().AsSingle();
-        string message = Task.Run(_resourceLoader.LoadLossMessage).GetAwaiter().GetResult();
+        string message = _resourceLoader.LoadLossMessage();
         container.BindInstance(message);
     }
 }

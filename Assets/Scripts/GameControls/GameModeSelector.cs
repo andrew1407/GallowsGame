@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using Zenject;
 using TMPro;
 
@@ -18,6 +17,11 @@ public class GameModeSelector
     public void Initialize()
     {
         _addressInput = _options.AddressField.GetComponent<TMP_InputField>();
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // Browsers allow neither raw sockets nor HttpClient, so the web build is offline only
+        _options.OfflineMode.isOn = true;
+        _options.OfflineMode.interactable = false;
+#endif
         _options.AddressField.SetActive(!_options.OfflineMode.isOn);
         _options.OfflineMode.onValueChanged.AddListener(toggleAction);
         _options.StartButton.onClick.AddListener(startGame);
@@ -37,7 +41,7 @@ public class GameModeSelector
         _starting = true;
         try
         {
-            IGameplayStrategy gameplayStrategy = _options.OfflineMode.isOn ? await loadOfflineMode() : loadOnlineMode();
+            IGameplayStrategy gameplayStrategy = _options.OfflineMode.isOn ? loadOfflineMode() : loadOnlineMode();
             _gameLoop.SetStrategy(gameplayStrategy);
             _options.BlockSelf.SetActive(false);
             deactivateStateParams();
@@ -49,10 +53,10 @@ public class GameModeSelector
         }
     }
 
-    private async Task<OfflineStrategy> loadOfflineMode()
+    private OfflineStrategy loadOfflineMode()
     {
         var resourceLoader = new ResourceLoader();
-        string[] words = await resourceLoader.LoadWords();
+        string[] words = resourceLoader.LoadWords();
         var gameRules = new GameRules(words);
         return _gameplayStrategyFactory.MakeOfflineStrategy(gameRules);
     }
