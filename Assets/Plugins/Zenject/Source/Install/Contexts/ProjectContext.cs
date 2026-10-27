@@ -101,7 +101,11 @@ namespace Zenject
             ProfileBlock.UnityMainThread = Thread.CurrentThread;
 #endif
 
+#if UNITY_6000_6_OR_NEWER
+            Assert.That(FindObjectsByType<ProjectContext>().IsEmpty(),
+#else
             Assert.That(FindObjectsOfType<ProjectContext>().IsEmpty(),
+#endif
                 "Tried to create multiple instances of ProjectContext!");
 
             var prefab = TryGetPrefab();

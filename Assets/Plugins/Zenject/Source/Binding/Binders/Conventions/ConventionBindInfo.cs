@@ -32,7 +32,11 @@ namespace Zenject
         {
             // This seems fast enough that it's not worth caching
             // We also want to allow dynamically loading assemblies
+#if UNITY_6000_6_OR_NEWER
+            return UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies();
+#else
             return AppDomain.CurrentDomain.GetAssemblies();
+#endif
         }
 
         bool ShouldIncludeAssembly(Assembly assembly)
