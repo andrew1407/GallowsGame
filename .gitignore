@@ -34,6 +34,7 @@ ExportedObj/
 *.csproj
 *.unityproj
 *.sln
+*.slnx
 *.suo
 *.tmp
 *.user
@@ -61,3 +62,5 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# VS Code
+.vscode/

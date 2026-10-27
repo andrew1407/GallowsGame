@@ -1,3 +1,6 @@
 ﻿{
-	"name": "Zenject"
+	"name": "Zenject",
+	"references": [
+		"Unity.InputSystem"
+	]
 }

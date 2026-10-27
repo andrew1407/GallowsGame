@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace ModestTree.Util
 {
@@ -25,6 +28,44 @@ namespace ModestTree.Util
             get { return AllScenes.Where(scene => scene.isLoaded); }
         }
 
+#if ENABLE_INPUT_SYSTEM
+        static bool IsKeyHeld(Key left, Key right)
+        {
+            var keyboard = Keyboard.current;
+            return keyboard != null && (keyboard[left].isPressed || keyboard[right].isPressed);
+        }
+
+        static bool WasKeyPressed(Key left, Key right)
+        {
+            var keyboard = Keyboard.current;
+            return keyboard != null && (keyboard[left].wasPressedThisFrame || keyboard[right].wasPressedThisFrame);
+        }
+
+        public static bool IsAltKeyDown
+        {
+            get { return IsKeyHeld(Key.LeftAlt, Key.RightAlt); }
+        }
+
+        public static bool IsControlKeyDown
+        {
+            get { return IsKeyHeld(Key.LeftCtrl, Key.RightCtrl); }
+        }
+
+        public static bool IsShiftKeyDown
+        {
+            get { return IsKeyHeld(Key.LeftShift, Key.RightShift); }
+        }
+
+        public static bool WasShiftKeyJustPressed
+        {
+            get { return WasKeyPressed(Key.LeftShift, Key.RightShift); }
+        }
+
+        public static bool WasAltKeyJustPressed
+        {
+            get { return WasKeyPressed(Key.LeftAlt, Key.RightAlt); }
+        }
+#else
         public static bool IsAltKeyDown
         {
             get { return Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt); }
@@ -49,6 +90,7 @@ namespace ModestTree.Util
         {
             get { return Input.GetKeyDown(KeyCode.LeftAlt) || Input.GetKeyDown(KeyCode.RightAlt); }
         }
+#endif
 
         public static int GetDepthLevel(Transform transform)
         {
