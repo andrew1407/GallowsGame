@@ -14,13 +14,37 @@ public class GameplayViewController : IViewController, IResetable
 
     private const int _noChallangeModeStartOffset = 10;
 
-    private readonly BodyPart[] _bodyPartsAppearanceOrder = {
+    // The head isn't listed: the last body step shows the whole body at once
+    private static readonly BodyPart[] _bodyPartsAppearanceOrder = {
         BodyPart.LEFT_LEG,
         BodyPart.RIGHT_LEG,
         BodyPart.TORSO,
         BodyPart.LEFT_HAND,
         BodyPart.RIGHT_HAND,
     };
+
+    // Hanger and body steps are counted from the tries left, so they're kept apart from the views to be checked alone
+
+    public static bool IsLastTry(int triesLeft) => triesLeft == 1;
+
+    public static int HangerPartIndex(int hangerParts, int triesLeft) => hangerParts - triesLeft + 1;
+
+    public static bool ShowsHangerPartInEasyMode(int triesLeft) => triesLeft < DifficultyStats.Tries(Difficulty.NORMAL);
+
+    // Null means the whole body is shown (the last body step)
+    public static BodyPart? BodyPartToShow(int hangerParts, int triesLeft)
+    {
+        int offset = 2;
+        int partPosition = triesLeft - hangerParts - offset;
+        if (partPosition == 0) return null;
+        return _bodyPartsAppearanceOrder[_bodyPartsAppearanceOrder.Length - partPosition];
+    }
+
+    public static int DisplayedTries(int tries, bool noChallangeMode)
+    {
+        if (!noChallangeMode) return tries;
+        return tries + _noChallangeModeStartOffset - DifficultyStats.Tries(Difficulty.NO_CHALLANGE);
+    }
 
     private readonly Dictionary<string, Func<int, IEnumerator>> _lossHandlers = new();
 
@@ -78,16 +102,14 @@ public class GameplayViewController : IViewController, IResetable
     {
         yield return updateTriesView(progress);
         var componentsSpawner = _viewTools.ComponentsSpawner;
-        bool lastTry = progress == 1;
-        if (lastTry)
+        if (IsLastTry(progress))
         {
             yield return null;
             yield return componentsSpawner.MainCharacter.Jump(_viewTools.CharacterMovement.Jump);
             yield break;
         }
         var hangerParts = componentsSpawner.Hanger.Parts;
-        int partIndex = hangerParts.Count - progress + 1;
-        HangerPart hangerPart = hangerParts[partIndex];
+        HangerPart hangerPart = hangerParts[HangerPartIndex(hangerParts.Count, progress)];
         hangerPart.StartMove();
         yield return new WaitWhile(() => hangerPart.Moving);
         yield return null;
@@ -98,33 +120,27 @@ public class GameplayViewController : IViewController, IResetable
         yield return updateTriesView(progress);
         var componentsSpawner = _viewTools.ComponentsSpawner;
         MainCharacter mainCharacter = componentsSpawner.MainCharacter;
-        int offset = 2;
-        int hangerParts = componentsSpawner.Hanger.Parts.Count;
-        int partPosition = progress - hangerParts - offset;
-        bool lastPosition = partPosition == 0;
-        if (lastPosition)
+        BodyPart? bodyPart = BodyPartToShow(componentsSpawner.Hanger.Parts.Count, progress);
+        if (bodyPart.HasValue)
         {
-            mainCharacter.BodyVisible = true;
-            mainCharacter.CurrentState = AnimationState.STANDING;
+            mainCharacter.SetBodyPartVisible(bodyPart.Value);
         }
         else
         {
-            int i = _bodyPartsAppearanceOrder.Length - partPosition;
-            mainCharacter.SetBodyPartVisible(_bodyPartsAppearanceOrder[i]);
+            mainCharacter.BodyVisible = true;
+            mainCharacter.CurrentState = AnimationState.STANDING;
         }
         yield return null;
     }
 
     private IEnumerator easyModeAction(int tries)
     {
-        yield return tries < DifficultyStats.Tries(Difficulty.NORMAL) ? showHangerPart(tries) : showBodyPart(tries);
+        yield return ShowsHangerPartInEasyMode(tries) ? showHangerPart(tries) : showBodyPart(tries);
     }
 
     private IEnumerator updateTriesView(int tries, bool noChallangeMode = false)
     {
-        if (noChallangeMode)
-            tries += _noChallangeModeStartOffset - DifficultyStats.Tries(Difficulty.NO_CHALLANGE);
-        _viewTools.TextTabsContainer.Tries = tries;
+        _viewTools.TextTabsContainer.Tries = DisplayedTries(tries, noChallangeMode);
         yield return null;
     }
 

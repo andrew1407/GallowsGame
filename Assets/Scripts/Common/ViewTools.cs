@@ -6,12 +6,18 @@ public struct ViewTools : IResetable
 
     public TextTabsContainer TextTabsContainer;
 
+    // UI-only setups (such as tests) have no spawner, so there are no characters to spawn or reset
+    private bool _hasSpawner => ComponentsSpawner != null;
+
     public void Initialize()
     {
-        ComponentsSpawner.SpawnMainCharacter();
-        ComponentsSpawner.SpawnHanger();
-        ComponentsSpawner.SpawnRunner();
-        
+        if (_hasSpawner)
+        {
+            ComponentsSpawner.SpawnMainCharacter();
+            ComponentsSpawner.SpawnHanger();
+            ComponentsSpawner.SpawnRunner();
+        }
+
         TextTabsContainer.CharactedDialogueVisible = false;
         TextTabsContainer.RunnerDialogueVisible = false;
         TextTabsContainer.GuessingVisible = false;
@@ -20,7 +26,7 @@ public struct ViewTools : IResetable
 
     public void ResetState()
     {
-        ComponentsSpawner.ResetState();
+        if (_hasSpawner) ComponentsSpawner.ResetState();
         TextTabsContainer.ResetState();
     }
 }

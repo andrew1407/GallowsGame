@@ -14,7 +14,7 @@ public class WinViewController : IViewController
         string difficulty = gameProgress.Difficulty;
         if (DifficultyStats.Is(difficulty, Difficulty.NO_CHALLANGE))
             yield return mainCharacter.Move(_viewTools.CharacterMovement.Center);
-        if (shouldSetBodyVisible(ref gameProgress))
+        if (ShouldRevealBody(gameProgress))
         {
             mainCharacter.BodyVisible = true;
             yield return null;
@@ -23,7 +23,8 @@ public class WinViewController : IViewController
         yield return null;
     }
 
-    private bool shouldSetBodyVisible(ref GameProgress gameProgress)
+    // Easy mode builds the body up part by part, so a win before it's complete has to show the rest
+    public static bool ShouldRevealBody(GameProgress gameProgress)
     {
         bool easyMode = DifficultyStats.Is(gameProgress.Difficulty, Difficulty.EASY);
         bool bodyVisible = gameProgress.Tries > DifficultyStats.Tries(Difficulty.NORMAL);
