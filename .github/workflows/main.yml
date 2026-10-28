@@ -3,10 +3,21 @@ name: Build & test project
 on:
   push:
     branches: [main]
-    tags: ['v*']        # a version tag also publishes the builds as a GitHub release
+    tags: ['v*']        # a version tag also publishes the builds as a GitHub release (tags ignore the paths below)
+    # Only what goes into the game or its build: README, Doc/, build.ps1 and the like don't start a run
+    paths:
+      - 'Assets/**'
+      - 'Packages/**'
+      - 'ProjectSettings/**'
+      - '.github/workflows/main.yml'
   pull_request:
     branches: [main]
-  workflow_dispatch:
+    paths:
+      - 'Assets/**'
+      - 'Packages/**'
+      - 'ProjectSettings/**'
+      - '.github/workflows/main.yml'
+  workflow_dispatch:   # run on demand, whatever changed
 
 permissions:
   contents: read

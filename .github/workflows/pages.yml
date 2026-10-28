@@ -8,7 +8,7 @@
 name: GitHub Pages
 
 on:
-  workflow_run:
+  workflow_run:   # so it follows the path filters of "Build & test project" too
     workflows: ["Build & test project"]
     types: [completed]
     branches: [main]
