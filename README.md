@@ -1,13 +1,13 @@
 # GallowsGame
 
-[![Build & test](https://github.com/andrew1407/GallowsGame/actions/workflows/main.yml/badge.svg)](https://github.com/andrew1407/GallowsGame/actions/workflows/main.yml)
-[![GitHub Pages](https://github.com/andrew1407/GallowsGame/actions/workflows/pages.yml/badge.svg)](https://github.com/andrew1407/GallowsGame/actions/workflows/pages.yml)
-
 <p align="center">
   <a href="https://andrew1407.github.io/GallowsGame/">
     <img src="./Assets/Art/icon.png" width="140" alt="GallowsGame Logo" />
   </a>
 </p>
+
+[![Build & test](https://github.com/andrew1407/GallowsGame/actions/workflows/main.yml/badge.svg)](https://github.com/andrew1407/GallowsGame/actions/workflows/main.yml)
+[![GitHub Pages](https://github.com/andrew1407/GallowsGame/actions/workflows/pages.yml/badge.svg)](https://github.com/andrew1407/GallowsGame/actions/workflows/pages.yml)
 
 **GallowsGame (Hangman)** is a 2D sprite game with:
 
