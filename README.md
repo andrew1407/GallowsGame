@@ -9,10 +9,6 @@
   </a>
 </p>
 
-<p align="center">
-  <b><a href="https://andrew1407.github.io/GallowsGame/">Play in the browser</a></b> · <a href="https://github.com/andrew1407/GallowsGame/releases/latest">Download for Windows, macOS, Linux</a>
-</p>
-
 **GallowsGame (Hangman)** is a 2D sprite game with:
 
 + 4 difficulty levels;
@@ -53,7 +49,10 @@ Win case (guess a word):
 
 ## Tests
 
-[EditMode](./Assets/Tests/EditMode) tests cover the game rules, the offline strategy, difficulty stats, payload (de)serialization, all four online clients (HTTP against a fake handler; TCP, UDP and WebSocket against loopback servers), the strategy factory, resources, the gameplay components and how lost tries map onto hanger and body parts (checked against the hanger prefab). [PlayMode](./Assets/Tests/PlayMode) tests cover the UI and the game flow: the game loop (stage chaining, input handling, restart), the start menu (offline start, online toggle, address validation), text tabs, stage coroutines and the view controllers. Run them from **Window → General → Test Runner** or headless:
+1. [EditMode](./Assets/Tests/EditMode): the game rules, the offline strategy, difficulty stats, payload (de)serialization, all four online clients (HTTP against a fake handler; TCP, UDP and WebSocket against loopback servers), the strategy factory, resources, the gameplay components and how lost tries map onto hanger and body parts (checked against the hanger prefab).
+2. [PlayMode](./Assets/Tests/PlayMode): the UI and the game flow: the game loop (stage chaining, input handling, restart), the start menu (offline start, online toggle, address validation), text tabs, stage coroutines and the view controllers.
+
+Run them from **Window → General → Test Runner** or headless:
 
 ```sh
 Unity -batchmode -projectPath . -runTests -testPlatform EditMode -testResults editmode.xml
