@@ -47,7 +47,12 @@ jobs:
             RUN_ID=$(gh run list --workflow main.yml --branch main --event push --status success --limit 1 --json databaseId --jq '.[0].databaseId')
           fi
           echo "Deploying the WebGL build of run $RUN_ID"
-          gh run download "$RUN_ID" --name GallowsGame-WebGL --dir artifact
+          # Artifact storage sometimes answers 503 for a while, so try again before failing
+          for attempt in 1 2 3 4 5; do
+            gh run download "$RUN_ID" --name GallowsGame-WebGL --dir artifact && break
+            [ "$attempt" = 5 ] && exit 1
+            echo "Download failed, retrying in $((attempt * 30))s"; rm -rf artifact; sleep $((attempt * 30))
+          done
           unzip -q artifact/GallowsGame-WebGL.zip -d _site
           # Serve Unity's files as they are, without Jekyll processing
           touch _site/.nojekyll
