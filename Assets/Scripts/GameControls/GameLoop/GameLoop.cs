@@ -28,7 +28,8 @@ public class GameLoop : IResetable, IDisposable
         _inputField.onSubmit.AddListener(async _ =>
         {
             await PlayStage();
-            _inputField.ActivateInputField();
+            // An empty field plays no stage, so nothing else gives the focus back
+            focusInputNextFrame();
         });
 #endif
         _viewTools.Initialize();
@@ -91,8 +92,23 @@ public class GameLoop : IResetable, IDisposable
         finally
         {
             _state.Playing = false;
+#if UNITY_WEBGL && !UNITY_EDITOR
+            focusInputNextFrame();
+#endif
         }
     }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+    // Each stage focuses the field (runStage), but in the browser the click that started the stage can be
+    // handled after that and take the focus away, so the field takes it back once the frame is over
+    private async void focusInputNextFrame()
+    {
+        await UnityEngine.Awaitable.NextFrameAsync();
+        if (_inputField == null || !_inputField.isActiveAndEnabled) return;
+        _inputField.Select();
+        _inputField.ActivateInputField();
+    }
+#endif
 
     private async Task<bool> runStage(string input)
     {
