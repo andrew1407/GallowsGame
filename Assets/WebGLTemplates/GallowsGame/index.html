@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <link rel="icon" type="image/png" href="TemplateData/icon.png">
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #231f20; }
+      /* The game is laid out for 16:9: the canvas takes the largest 16:9 box the window fits and the rest is letterboxed,
+         so nothing is cut off whatever the window shape */
+      #unity-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+      #unity-canvas {
+        width: min(100vw, calc(100vh * 16 / 9));
+        height: min(100vh, calc(100vw * 9 / 16));
+        display: block; background: #231f20; outline: none;
+      }
+      #unity-loading { position: absolute; width: min(60vw, 320px); text-align: center; color: #ddd; font: 14px sans-serif; }
+      #unity-loading img { width: 96px; margin-bottom: 16px; }
+      #unity-progress { height: 6px; border-radius: 3px; background: #444; overflow: hidden; }
+      #unity-progress-full { width: 0; height: 100%; background: #ddd; transition: width 0.2s; }
+      #unity-fullscreen { position: absolute; right: 12px; bottom: 12px; width: 32px; height: 32px; padding: 0; display: none;
+        border: 0; border-radius: 6px; background: rgba(0, 0, 0, 0.45); color: #fff; font: 20px/32px sans-serif; cursor: pointer; }
+      #unity-fullscreen:hover { background: rgba(0, 0, 0, 0.7); }
+      #unity-warning { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: none; font: 14px sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div id="unity-container">
+      <canvas id="unity-canvas" width="{{{ WIDTH }}}" height="{{{ HEIGHT }}}" tabindex="-1"></canvas>
+      <div id="unity-loading">
+        <img src="TemplateData/icon.png" alt="">
+        <div id="unity-progress"><div id="unity-progress-full"></div></div>
+      </div>
+      <button id="unity-fullscreen" title="Fullscreen" aria-label="Fullscreen">&#x26F6;</button>
+      <div id="unity-warning"></div>
+    </div>
+    <script>
+      const canvas = document.querySelector("#unity-canvas");
+      const warning = document.querySelector("#unity-warning");
+
+      // Errors stay on screen, warnings and notes disappear after a few seconds
+      function unityShowBanner(message, type) {
+        const banner = document.createElement("div");
+        banner.textContent = message;
+        banner.style = "padding: 8px 12px; margin-bottom: 4px; border-radius: 4px; color: #000; background: "
+          + (type == "error" ? "#f66" : type == "warning" ? "#fd6" : "#ddd");
+        warning.appendChild(banner);
+        warning.style.display = "block";
+        if (type != "error") setTimeout(() => {
+          warning.removeChild(banner);
+          if (!warning.children.length) warning.style.display = "none";
+        }, 5000);
+      }
+
+      const buildUrl = "Build";
+      const config = {
+        arguments: [],
+#if PROGRESSIVE_ASSET_LOADING
+        primaryDataUrls: {{{ JSON.stringify(PRIMARY_DATA_FILES) }}},
+        secondaryDataUrls: {{{ JSON.stringify(SECONDARY_DATA_FILES) }}},
+#else
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+#endif
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_WASM
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        showBanner: unityShowBanner,
+      };
+
+      const script = document.createElement("script");
+      script.src = buildUrl + "/{{{ LOADER_FILENAME }}}";
+      script.onload = () => {
+        const loading = document.querySelector("#unity-loading");
+        const progressFull = document.querySelector("#unity-progress-full");
+        const fullscreen = document.querySelector("#unity-fullscreen");
+        createUnityInstance(canvas, config, (progress) => {
+          progressFull.style.width = 100 * progress + "%";
+        }).then((unityInstance) => {
+          loading.style.display = "none";
+          fullscreen.style.display = "block";
+          fullscreen.onclick = () => unityInstance.SetFullscreen(1);
+          // Keyboard input goes to the game once it's clicked
+          canvas.focus();
+        }).catch((message) => unityShowBanner(message, "error"));
+      };
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>

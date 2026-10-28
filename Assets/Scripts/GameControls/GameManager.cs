@@ -16,7 +16,12 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // A page can't close its browser tab, so there's nothing for the exit button to do
+        _exitButton.gameObject.SetActive(false);
+#else
         _exitButton.onClick.AddListener(Application.Quit);
+#endif
         _submitButton.onClick.AddListener(async () => await _gameLoop.PlayStage());
         _restartButton.onClick.AddListener(_gameLoop.ResetState);
         _gameModeSelector.Initialize();
