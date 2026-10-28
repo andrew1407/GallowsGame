@@ -31,8 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # A Personal license is activated by every Unity job and only allows two activations at a time
-      max-parallel: 2
+      # Every Unity job activates the Personal license as a new machine, and parallel activations get Unity killed (exit 137)
+      max-parallel: 1
       matrix:
         testMode:
           - playmode
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         # Desktop and web targets the Linux editor images can produce
         # (all use the Mono backend, so no platform-native IL2CPP toolchain is needed)
