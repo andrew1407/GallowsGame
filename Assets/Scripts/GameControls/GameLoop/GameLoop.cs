@@ -22,7 +22,9 @@ public class GameLoop : IResetable, IDisposable
         _state = new(_viewTools.TextTabsContainer);
         _inputField.onValueChanged.AddListener(formatInput);
 #if UNITY_WEBGL && !UNITY_EDITOR
-        // Enter submits the letter like the Submit button; it also ends editing, so the field takes focus back for the next one
+        // Enter submits the letter like the Submit button; it also ends editing, so the field takes focus back for the next one.
+        // Focusing selects all the text by default, which made Enter look like it only highlighted the letter
+        _inputField.onFocusSelectAll = false;
         _inputField.onSubmit.AddListener(async _ =>
         {
             await PlayStage();
