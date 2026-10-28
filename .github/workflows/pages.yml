@@ -1,27 +1,26 @@
-# Builds the game for WebGL and publishes it to GitHub Pages, so it can be played in the browser.
+# Publishes the WebGL build to GitHub Pages, so the game can be played in the browser.
+#
+# It deploys the WebGL archive "Build & test project" already made instead of building again:
+# no second 25-minute build, and no extra Unity license activation (a Personal license only allows two at a time).
 #
 # NOTE: Pages must be served from GitHub Actions —
 # Settings → Pages → Build and deployment → Source: "GitHub Actions"
-# (configure-pages below tries to switch it on if Pages was never enabled).
 name: GitHub Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build & test project"]
+    types: [completed]
     branches: [main]
-    # Only what can change the build: docs and CI for other targets ship nothing
-    paths:
-      - 'Assets/**'
-      - 'Packages/**'
-      - 'ProjectSettings/**'
-      - '.github/workflows/pages.yml'
-  workflow_dispatch:   # deploy on demand (use this for the first run, or to force one)
+  workflow_dispatch:   # redeploy the latest successful main build on demand
 
 permissions:
   contents: read
+  actions: read   # download the build from the other workflow's run
   pages: write
   id-token: write
 
-# One deployment at a time; a newer push supersedes an in-flight one
+# One deployment at a time; a newer build supersedes an in-flight one
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -31,43 +30,31 @@ env:
 
 jobs:
   build:
-    name: Build for WebGL
+    name: Assemble site
+    # Only builds of pushes to main that passed (tests included), not pull requests
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          lfs: true
-      - uses: actions/cache@v5
-        with:
-          path: Library
-          key: Library-WebGL-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
-          restore-keys: |
-            Library-WebGL-
-            Library-
-      - uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          targetPlatform: WebGL
-          buildName: GallowsGame
-
       # Pages cannot set Content-Encoding, so the build relies on the player's decompression
       # fallback (PlayerSettings → WebGL → Publishing → Decompression Fallback) to load
-      - name: Assemble _site
+      - name: Download WebGL build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
-          sudo chown -R "$(id -u):$(id -g)" build
-          cp -r build/WebGL/GallowsGame _site
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list --workflow main.yml --branch main --event push --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          echo "Deploying the WebGL build of run $RUN_ID"
+          gh run download "$RUN_ID" --name GallowsGame-WebGL --dir artifact
+          unzip -q artifact/GallowsGame-WebGL.zip -d _site
           # Serve Unity's files as they are, without Jekyll processing
           touch _site/.nojekyll
           du -sh _site && ls _site
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
-        with:
-          enablement: true
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:

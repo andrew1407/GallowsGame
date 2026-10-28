@@ -31,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # A Personal license is activated by every Unity job and only allows two activations at a time
+      max-parallel: 2
       matrix:
         testMode:
           - playmode
@@ -61,9 +63,11 @@ jobs:
 
   build:
     name: Build for ${{ matrix.platform }}
+    needs: test   # also keeps builds from taking license activations while tests run
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         # Desktop and web targets the Linux editor images can produce
         # (all use the Mono backend, so no platform-native IL2CPP toolchain is needed)
