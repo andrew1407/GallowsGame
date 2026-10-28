@@ -71,3 +71,36 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  # Only what made the live site is kept: the build run it deployed, this run, its deployment and the build's caches
+  cleanup:
+    name: Clean up older runs, deployments and caches
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      deployments: write
+    steps:
+      - name: Delete everything older than the live site
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          KEEP_RUN: ${{ github.event.workflow_run.id || 0 }}
+          BUILT_AT: ${{ github.event.workflow_run.created_at || '9999' }}
+        run: |
+          # Runs still in progress (this one, a newer build) are left alone
+          for id in $(gh api "repos/$GH_REPO/actions/runs?per_page=100" --paginate \
+              --jq ".workflow_runs[] | select(.status == \"completed\" and .id != $KEEP_RUN) | .id"); do
+            gh api -X DELETE "repos/$GH_REPO/actions/runs/$id" >/dev/null && echo "Deleted run $id" || true
+          done
+          live=$(gh api "repos/$GH_REPO/deployments?environment=github-pages&per_page=100" --jq 'sort_by(.created_at) | last | .id')
+          for id in $(gh api "repos/$GH_REPO/deployments?per_page=100" --jq ".[] | select(.id != $live) | .id"); do
+            gh api -X POST "repos/$GH_REPO/deployments/$id/statuses" -f state=inactive >/dev/null || true
+            gh api -X DELETE "repos/$GH_REPO/deployments/$id" >/dev/null && echo "Deleted deployment $id" || true
+          done
+          # A manual redeploy has no build run to compare with, so it keeps the caches
+          for id in $(gh api "repos/$GH_REPO/actions/caches?per_page=100" \
+              --jq ".actions_caches[] | select(.created_at < \"$BUILT_AT\") | .id"); do
+            [ "$BUILT_AT" = "9999" ] && break
+            gh api -X DELETE "repos/$GH_REPO/actions/caches/$id" >/dev/null && echo "Deleted cache $id" || true
+          done
