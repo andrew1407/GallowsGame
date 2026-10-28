@@ -21,6 +21,14 @@ public class GameLoop : IResetable, IDisposable
     {
         _state = new(_viewTools.TextTabsContainer);
         _inputField.onValueChanged.AddListener(formatInput);
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // Enter submits the letter like the Submit button; it also ends editing, so the field takes focus back for the next one
+        _inputField.onSubmit.AddListener(async _ =>
+        {
+            await PlayStage();
+            _inputField.ActivateInputField();
+        });
+#endif
         _viewTools.Initialize();
     }
 
