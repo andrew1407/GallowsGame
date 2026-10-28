@@ -10,29 +10,34 @@
       /* The game is laid out for 16:9: the canvas takes the largest 16:9 box the window fits and the rest is letterboxed,
          so nothing is cut off whatever the window shape */
       #unity-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-      #unity-canvas {
+      #unity-frame {
+        position: relative;
         width: min(100vw, calc(100vh * 16 / 9));
         height: min(100vh, calc(100vw * 9 / 16));
-        display: block; background: #231f20; outline: none;
       }
+      #unity-canvas { width: 100%; height: 100%; display: block; background: #231f20; outline: none; }
       #unity-loading { position: absolute; width: min(60vw, 320px); text-align: center; color: #ddd; font: 14px sans-serif; }
       #unity-loading img { width: 96px; margin-bottom: 16px; }
       #unity-progress { height: 6px; border-radius: 3px; background: #444; overflow: hidden; }
       #unity-progress-full { width: 0; height: 100%; background: #ddd; transition: width 0.2s; }
-      #unity-fullscreen { position: absolute; right: 12px; bottom: 12px; width: 32px; height: 32px; padding: 0; display: none;
-        border: 0; border-radius: 6px; background: rgba(0, 0, 0, 0.45); color: #fff; font: 20px/32px sans-serif; cursor: pointer; }
-      #unity-fullscreen:hover { background: rgba(0, 0, 0, 0.7); }
+      /* Top right of the game picture: the game keeps its own buttons in the bottom right corner and nothing in this one */
+      #unity-fullscreen { position: absolute; right: 10px; top: 10px; width: 32px; height: 32px; padding: 0; display: none;
+        border: 0; border-radius: 6px; background: rgba(0, 0, 0, 0.35); color: #fff; font: 20px/32px sans-serif;
+        cursor: pointer; opacity: 0.6; transition: opacity 0.2s, background 0.2s; }
+      #unity-fullscreen:hover { opacity: 1; background: rgba(0, 0, 0, 0.7); }
       #unity-warning { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: none; font: 14px sans-serif; }
     </style>
   </head>
   <body>
     <div id="unity-container">
-      <canvas id="unity-canvas" width="{{{ WIDTH }}}" height="{{{ HEIGHT }}}" tabindex="-1"></canvas>
+      <div id="unity-frame">
+        <canvas id="unity-canvas" width="{{{ WIDTH }}}" height="{{{ HEIGHT }}}" tabindex="-1"></canvas>
+        <button id="unity-fullscreen" title="Fullscreen" aria-label="Fullscreen">&#x26F6;</button>
+      </div>
       <div id="unity-loading">
         <img src="TemplateData/icon.png" alt="">
         <div id="unity-progress"><div id="unity-progress-full"></div></div>
       </div>
-      <button id="unity-fullscreen" title="Fullscreen" aria-label="Fullscreen">&#x26F6;</button>
       <div id="unity-warning"></div>
     </div>
     <script>
@@ -86,8 +91,17 @@
           progressFull.style.width = 100 * progress + "%";
         }).then((unityInstance) => {
           loading.style.display = "none";
-          fullscreen.style.display = "block";
           fullscreen.onclick = () => unityInstance.SetFullscreen(1);
+          // No button while already fullscreen, whether by the button, F11 or the browser menu
+          // (F11 doesn't go through the Fullscreen API, so a window as big as the screen counts too)
+          const fullscreenMode = window.matchMedia("(display-mode: fullscreen)");
+          const isFullscreen = () => document.fullscreenElement != null || fullscreenMode.matches
+            || (window.innerWidth >= screen.width - 1 && window.innerHeight >= screen.height - 1);
+          const updateFullscreenButton = () => fullscreen.style.display = isFullscreen() ? "none" : "block";
+          document.addEventListener("fullscreenchange", updateFullscreenButton);
+          fullscreenMode.addEventListener("change", updateFullscreenButton);
+          window.addEventListener("resize", updateFullscreenButton);
+          updateFullscreenButton();
           // Keyboard input goes to the game once it's clicked
           canvas.focus();
         }).catch((message) => unityShowBanner(message, "error"));
