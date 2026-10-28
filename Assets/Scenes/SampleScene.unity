@@ -737,6 +737,7 @@ MonoBehaviour:
   _submitButton: {fileID: 153109577}
   _restartButton: {fileID: 169677444}
   _exitButton: {fileID: 174453773}
+  _infoButton: {fileID: 1241363926}
 --- !u!1 &375186358
 GameObject:
   m_ObjectHideFlags: 0
