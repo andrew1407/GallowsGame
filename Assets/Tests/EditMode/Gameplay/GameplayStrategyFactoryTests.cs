@@ -25,6 +25,19 @@ public class GameplayStrategyFactoryTests
     }
 
     [Test]
+    public void Should_Make_Strategies_For_Secure_Schemes()
+    {
+        GameplayStrategyFactory factory = new();
+
+        IGameplayStrategy http = factory.MakeOnlineStrategyByUri(new Uri("https://localhost:8080"));
+        IGameplayStrategy ws = factory.MakeOnlineStrategyByUri(new Uri("wss://localhost:8080"));
+
+        Assert.IsInstanceOf<HttpClientStrategy>(http);
+        Assert.IsInstanceOf<WebSocketClientStrategy>(ws);
+        (http as IDisposable).Dispose();
+    }
+
+    [Test]
     public void Should_Make_WebSocket_Strategy_By_Uri_Scheme()
     {
         GameplayStrategyFactory factory = new();
@@ -61,7 +74,7 @@ public class GameplayStrategyFactoryTests
     public void Should_Throw_Uri_Format_Exception_For_Unsupported_Scheme()
     {
         GameplayStrategyFactory factory = new();
-        string[] addresses = { "https://localhost", "ftp://localhost", "file:///sasik" };
+        string[] addresses = { "ftp://localhost", "file:///sasik", "gopher://localhost" };
 
         foreach (var address in addresses)
             Assert.Throws<UriFormatException>(() => factory.MakeOnlineStrategyByUri(new Uri(address)), message: $"{address} shouldn't be supported");

@@ -5,15 +5,17 @@ using Newtonsoft.Json;
 
 public class HttpClientStrategy : IGameplayStrategy, IDisposable
 {
-    private readonly HttpClient _client;
+    private readonly IJsonPoster _poster;
 
     private readonly string _address;
 
     private string _id;
 
-    public HttpClientStrategy(HttpClient client, Uri address)
+    public HttpClientStrategy(HttpClient client, Uri address) : this(new HttpClientPoster(client), address) { }
+
+    public HttpClientStrategy(IJsonPoster poster, Uri address)
     {
-        _client = client;
+        _poster = poster;
         string uri = address.AbsoluteUri;
         if (!uri.EndsWith('/')) uri += '/';
         uri += RequestPayload.EVENT_NAME;
@@ -36,7 +38,7 @@ public class HttpClientStrategy : IGameplayStrategy, IDisposable
         return gameProgress;
     }
 
-    public void Dispose() => _client.Dispose();
+    public void Dispose() => _poster.Dispose();
 
     private async Task<ResponsePayload> request(string id = null, string input = null, bool? initital = null)
     {
@@ -47,10 +49,7 @@ public class HttpClientStrategy : IGameplayStrategy, IDisposable
                 Input = input,
             },
         };
-        string stringified = JsonConvert.SerializeObject(payloadData);
-        var payload = new StringContent(stringified, System.Text.Encoding.UTF8, "application/json");
-        var response = await _client.PostAsync(_address, payload);
-        string json = await response.Content.ReadAsStringAsync();
+        string json = await _poster.Post(_address, JsonConvert.SerializeObject(payloadData));
         return JsonConvert.DeserializeObject<ResponsePayload>(json);
     }
 }

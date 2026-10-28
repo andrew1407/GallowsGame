@@ -99,6 +99,16 @@ public class WebSocketClientStrategyTests
     }
 
     [Test]
+    public void Should_Fail_Setup_When_Server_Is_Unreachable()
+    {
+        WebSocketClientStrategy strategy = new($"ws://127.0.0.1:{ProtocolMessages.FreePort()}{_path}");
+
+        var error = Assert.Throws<System.AggregateException>(() => Sync.Run(strategy.Setup), message: "Setup shouldn't wait forever for a server that isn't there");
+        Assert.IsInstanceOf<System.IO.IOException>(error.InnerException);
+        strategy.Dispose();
+    }
+
+    [Test]
     public void Should_Return_Default_Progress_Before_Setup()
     {
         WebSocketClientStrategy strategy = new(_address);

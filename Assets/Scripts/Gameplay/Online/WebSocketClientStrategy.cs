@@ -1,38 +1,55 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using WebSocketSharp;
 
 public class WebSocketClientStrategy : IGameplayStrategy, IDisposable
 {
     private readonly string _address;
 
-    private WebSocket _socket;
+    private readonly Func<string, IWebSocketConnection> _connect;
+
+    private IWebSocketConnection _socket;
 
     private TaskCompletionSource<ResponsePayload?> _messageData;
 
-    public WebSocketClientStrategy(string address) => _address = address;
+    public WebSocketClientStrategy(string address, Func<string, IWebSocketConnection> connect = null)
+    {
+        _address = address;
+        _connect = connect ?? WebSocketConnection.Create;
+    }
 
-    public WebSocketClientStrategy(Uri address) => _address = address.AbsoluteUri;
+    public WebSocketClientStrategy(Uri address) : this(address.AbsoluteUri) { }
 
     public async Task Setup()
     {
         Dispose();
-        _socket = new(_address);
+        IWebSocketConnection socket = _connect(_address);
+        _socket = socket;
         TaskCompletionSource<bool> connection = new();
-        var onOpen = new EventHandler((_, _) => connection.SetResult(true));
-        _socket.OnOpen += onOpen;
-        _socket.OnMessage += parseMessage;
-        _socket.OnClose += clearMessageData;
+        Action onOpen = () => connection.TrySetResult(true);
+        // Without this an unreachable server would keep the game waiting forever
+        Action onFailed = () => connection.TrySetException(new IOException($"Can't connect to {_address}"));
+        socket.Opened += onOpen;
+        socket.Closed += onFailed;
+        socket.MessageReceived += parseMessage;
+        socket.Closed += clearMessageData;
         _messageData = new();
-        _socket.ConnectAsync();
-        await connection.Task;
-        _socket.OnOpen -= onOpen;
+        socket.Connect();
+        try
+        {
+            await connection.Task;
+        }
+        finally
+        {
+            socket.Opened -= onOpen;
+            socket.Closed -= onFailed;
+        }
     }
 
     public async Task<GameProgress> StageAction(string input)
     {
-        if (_socket == null || _socket.ReadyState != WebSocketState.Open) return default;
+        if (_socket == null || !_socket.IsOpen) return default;
         if (_messageData == null) sendInput(input);
         var response = await _messageData.Task;
         _messageData = null;
@@ -45,15 +62,15 @@ public class WebSocketClientStrategy : IGameplayStrategy, IDisposable
     public void Dispose()
     {
         if (_socket == null) return;
-        _socket.Close();
-        _socket.OnMessage -= parseMessage;
-        _socket.OnClose -= clearMessageData;
+        _socket.MessageReceived -= parseMessage;
+        _socket.Closed -= clearMessageData;
+        _socket.Dispose();
         _socket = null;
     }
 
-    private void parseMessage(object _, MessageEventArgs e)
+    private void parseMessage(string message)
     {
-        var response = JsonConvert.DeserializeObject<ResponsePayload?>(e.Data);
+        var response = JsonConvert.DeserializeObject<ResponsePayload?>(message);
         _messageData?.TrySetResult(response);
     }
 
@@ -67,5 +84,5 @@ public class WebSocketClientStrategy : IGameplayStrategy, IDisposable
         _socket.Send(JsonConvert.SerializeObject(requestPayload));
     }
 
-    private void clearMessageData(object _, CloseEventArgs e) => _messageData?.TrySetResult(null);
+    private void clearMessageData() => _messageData?.TrySetResult(null);
 }
