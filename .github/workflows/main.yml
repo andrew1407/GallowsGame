@@ -31,8 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # Every Unity job activates the Personal license as a new machine, and parallel activations get Unity killed (exit 137)
-      max-parallel: 1
+      max-parallel: 2
       matrix:
         testMode:
           - playmode
@@ -41,15 +40,28 @@ jobs:
       - uses: actions/checkout@v5
         with:
           lfs: true
+      # Unity 6.6 keeps its Data Store in Library; restored from another machine it can get the editor killed
+      # (exit 137) while loading scripts, so every job starts it fresh
       - uses: actions/cache@v5
         with:
-          path: Library
-          key: Library-test-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          path: |
+            Library
+            !Library/DataStore
+          key: Library-v2-test-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
           restore-keys: |
-            Library-test-
-            Library-
+            Library-v2-test-
+            Library-v2-
       - uses: game-ci/unity-test-runner@v4
         id: tests
+        continue-on-error: true
+        with:
+          testMode: ${{ matrix.testMode }}
+          artifactsPath: ${{ matrix.testMode }}-artifacts
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: ${{ matrix.testMode }} Test Results
+      # One more try: a killed editor shouldn't fail the whole run
+      - uses: game-ci/unity-test-runner@v4
+        if: steps.tests.outcome == 'failure'
         with:
           testMode: ${{ matrix.testMode }}
           artifactsPath: ${{ matrix.testMode }}-artifacts
@@ -59,15 +71,15 @@ jobs:
         if: always()
         with:
           name: Test results for ${{ matrix.testMode }}
-          path: ${{ steps.tests.outputs.artifactsPath }}
+          path: ${{ matrix.testMode }}-artifacts
 
   build:
     name: Build for ${{ matrix.platform }}
-    needs: test   # also keeps builds from taking license activations while tests run
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      max-parallel: 1
+      max-parallel: 2
       matrix:
         # Desktop and web targets the Linux editor images can produce
         # (all use the Mono backend, so no platform-native IL2CPP toolchain is needed)
@@ -91,12 +103,22 @@ jobs:
           lfs: true
       - uses: actions/cache@v5
         with:
-          path: Library
-          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          path: |
+            Library
+            !Library/DataStore
+          key: Library-v2-${{ matrix.targetPlatform }}-${{ hashFiles('Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
           restore-keys: |
-            Library-${{ matrix.targetPlatform }}-
-            Library-
+            Library-v2-${{ matrix.targetPlatform }}-
+            Library-v2-
       - uses: game-ci/unity-builder@v4
+        id: build
+        continue-on-error: true
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: GallowsGame
+      # One more try: a killed editor shouldn't fail the whole run
+      - uses: game-ci/unity-builder@v4
+        if: steps.build.outcome == 'failure'
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
           buildName: GallowsGame

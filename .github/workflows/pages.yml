@@ -1,7 +1,7 @@
 # Publishes the WebGL build to GitHub Pages, so the game can be played in the browser.
 #
 # It deploys the WebGL archive "Build & test project" already made instead of building again:
-# no second 25-minute build, and no extra Unity license activation (parallel activations get Unity killed).
+# no second 25-minute build of the same commit.
 #
 # NOTE: Pages must be served from GitHub Actions —
 # Settings → Pages → Build and deployment → Source: "GitHub Actions"
