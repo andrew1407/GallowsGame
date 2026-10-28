@@ -1,4 +1,7 @@
 using System.Collections;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
@@ -97,10 +100,24 @@ public class GameModeSelectorTests : ZenjectIntegrationTestFixture
     }
 
     [UnityTest]
+    public IEnumerator Should_Return_To_Menu_When_Server_Is_Unreachable()
+    {
+        CommonInstall(offline: false);
+        int port = freePort();
+        LogAssert.Expect(LogType.Exception, new Regex("Can't connect"));
+
+        _addressInput.text = $"ws://127.0.0.1:{port}/gallows";
+        _options.StartButton.onClick.Invoke();
+        yield return Wait.Until(() => _options.BlockSelf.activeSelf && string.IsNullOrEmpty(_addressInput.text), "Menu wasn't shown again");
+
+        Assert.True(_options.BlockSelf.activeSelf, message: "Start menu should come back so another address can be tried");
+    }
+
+    [UnityTest]
     public IEnumerator Should_Stay_In_Menu_And_Clear_Invalid_Address_On_Start()
     {
         CommonInstall(offline: false);
-        string[] addresses = { "sasik", "ftp://localhost:8080", "https://localhost" };
+        string[] addresses = { "sasik", "ftp://localhost:8080", "file:///sasik" };
 
         foreach (var address in addresses)
         {
@@ -111,5 +128,14 @@ public class GameModeSelectorTests : ZenjectIntegrationTestFixture
             Assert.True(_options.BlockSelf.activeSelf, message: $"Game shouldn't start with \"{address}\" address");
             Assert.IsEmpty(_addressInput.text, message: $"Invalid address \"{address}\" should be cleared");
         }
+    }
+
+    private static int freePort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
     }
 }

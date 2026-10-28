@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 using Zenject;
 using TMPro;
 
@@ -17,11 +18,6 @@ public class GameModeSelector
     public void Initialize()
     {
         _addressInput = _options.AddressField.GetComponent<TMP_InputField>();
-#if UNITY_WEBGL && !UNITY_EDITOR
-        // Browsers allow neither raw sockets nor HttpClient, so the web build is offline only
-        _options.OfflineMode.isOn = true;
-        _options.OfflineMode.interactable = false;
-#endif
         _options.AddressField.SetActive(!_options.OfflineMode.isOn);
         _options.OfflineMode.onValueChanged.AddListener(toggleAction);
         _options.StartButton.onClick.AddListener(startGame);
@@ -39,9 +35,10 @@ public class GameModeSelector
     {
         if (_starting) return;
         _starting = true;
+        IGameplayStrategy gameplayStrategy = null;
         try
         {
-            IGameplayStrategy gameplayStrategy = _options.OfflineMode.isOn ? loadOfflineMode() : loadOnlineMode();
+            gameplayStrategy = _options.OfflineMode.isOn ? loadOfflineMode() : loadOnlineMode();
             _gameLoop.SetStrategy(gameplayStrategy);
             _options.BlockSelf.SetActive(false);
             deactivateStateParams();
@@ -49,6 +46,14 @@ public class GameModeSelector
         }
         catch(UriFormatException)
         {
+            deactivateStateParams();
+        }
+        catch(Exception e)
+        {
+            // An unreachable server mustn't leave a game screen that never answers: back to the menu
+            Debug.LogException(e);
+            if (gameplayStrategy is IDisposable disposable) disposable.Dispose();
+            _options.BlockSelf.SetActive(true);
             deactivateStateParams();
         }
     }

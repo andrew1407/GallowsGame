@@ -71,10 +71,17 @@ public class GameLoop : IResetable, IDisposable
     {
         if (_state.Playing) return;
         _state.Playing = true;
-        bool stageInterractive;
-        do stageInterractive = await runStage(input);
-        while(!stageInterractive);
-        _state.Playing = false;
+        // A failing stage must not leave the loop marked as playing, or every later submit is ignored
+        try
+        {
+            bool stageInterractive;
+            do stageInterractive = await runStage(input);
+            while(!stageInterractive);
+        }
+        finally
+        {
+            _state.Playing = false;
+        }
     }
 
     private async Task<bool> runStage(string input)
