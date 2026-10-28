@@ -5,7 +5,7 @@
 #   ./build.ps1 -Platforms Windows,Linux,macOS,WebGL
 #
 # Close the project in the editor first: batch mode can't open a project that is already open.
-# Builds land in Builds/<Platform>/ and archives in Builds/GallowsGame-<Platform>.zip
+# Builds land in dist/<Platform>/ and archives in dist/GallowsGame-<Platform>.zip
 param(
     [ValidateSet('Windows', 'Linux', 'macOS', 'WebGL')]
     [string[]] $Platforms = @('Windows', 'WebGL'),
@@ -14,7 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $projectPath = $PSScriptRoot
-$buildsPath = Join-Path $projectPath 'Builds'
+$buildsPath = Join-Path $projectPath 'dist'
 
 if (-not $UnityPath) {
     $version = (Select-String -Path (Join-Path $projectPath 'ProjectSettings/ProjectVersion.txt') -Pattern '^m_EditorVersion: (.+)$').Matches[0].Groups[1].Value

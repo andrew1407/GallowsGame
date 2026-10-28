@@ -61,7 +61,7 @@ Unity -batchmode -projectPath . -runTests -testPlatform PlayMode -testResults pl
 
 ## Building locally
 
-Use the **Build** menu in the editor, or [build.ps1](./build.ps1) to build with the project's Unity version in batch mode and zip the results into `Builds/` (close the project in the editor first):
+Use the **Build** menu in the editor, or [build.ps1](./build.ps1) to build with the project's Unity version in batch mode and zip the results into `dist/` (close the project in the editor first):
 
 ```powershell
 ./build.ps1                                       # Windows + WebGL

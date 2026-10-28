@@ -8,10 +8,10 @@ using UnityEngine.Rendering;
 
 // Player builds for the menu (Build/...) and for batch mode:
 //   Unity -batchmode -quit -projectPath . -executeMethod BuildScript.BuildWindows
-// Every build lands in Builds/<Platform>/ (ignored by git)
+// Every build lands in dist/<Platform>/ (ignored by git)
 public static class BuildScript
 {
-    private const string _outputRoot = "Builds";
+    private const string _outputRoot = "dist";
 
     private static readonly (string Platform, BuildTarget Target, string Location)[] _targets = {
         ("Windows", BuildTarget.StandaloneWindows64, "GallowsGame.exe"),
